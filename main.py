@@ -6,6 +6,7 @@ import time
 import cv2
 import os
 import glob
+import pdb
 
 files = glob.glob('output/*.png')
 for f in files:
@@ -14,7 +15,9 @@ for f in files:
 from sort import *
 tracker = Sort()
 memory = {}
-line = [(43, 543), (550, 655)]
+# line = [(43, 543), (550, 655)]
+line = [(280, 400), (380, 1079)]
+
 counter = 0
 
 # construct the argument parse and parse the arguments
@@ -56,7 +59,10 @@ configPath = os.path.sep.join([args["yolo"], "yolov3.cfg"])
 print("[INFO] loading YOLO from disk...")
 net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
 ln = net.getLayerNames()
-ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+# pdb.set_trace()
+# ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+out_layer_indices = net.getUnconnectedOutLayers().flatten()
+ln = [ln[i - 1] for i in out_layer_indices]
 
 # initialize the video stream, pointer to output video file, and
 # frame dimensions
@@ -163,11 +169,13 @@ while True:
 	c = []
 	previous = memory.copy()
 	memory = {}
-
-	for track in tracks:
-		boxes.append([track[0], track[1], track[2], track[3]])
-		indexIDs.append(int(track[4]))
-		memory[indexIDs[-1]] = boxes[-1]
+	if tracks is None:
+		continue
+	else:
+		for track in tracks:
+			boxes.append([track[0], track[1], track[2], track[3]])
+			indexIDs.append(int(track[4]))
+			memory[indexIDs[-1]] = boxes[-1]
 
 	if len(boxes) > 0:
 		i = int(0)

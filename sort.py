@@ -19,8 +19,10 @@ from __future__ import print_function
 
 from numba import jit
 import numpy as np
-from sklearn.utils.linear_assignment_ import linear_assignment
+# from sklearn.utils.linear_assignment_ import linear_assignment 
+from scipy.optimize import linear_sum_assignment as linear_assignment 
 from filterpy.kalman import KalmanFilter
+import pdb
 
 @jit
 def iou(bb_test,bb_gt):
@@ -136,10 +138,13 @@ def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
   for d,det in enumerate(detections):
     for t,trk in enumerate(trackers):
       iou_matrix[d,t] = iou(det,trk)
-  matched_indices = linear_assignment(-iou_matrix)
+  # matched_indices = linear_assignment(-iou_matrix)
+  row_ind, col_ind = linear_assignment(-iou_matrix)
+  matched_indices = np.array(list(zip(row_ind, col_ind)))
 
-  unmatched_detections = []
+  unmatched_detections = []  
   for d,det in enumerate(detections):
+    
     if(d not in matched_indices[:,0]):
       unmatched_detections.append(d)
   unmatched_trackers = []
@@ -200,6 +205,11 @@ class Sort(object):
     for t,trk in enumerate(self.trackers):
       if(t not in unmatched_trks):
         d = matched[np.where(matched[:,1]==t)[0],0]
+        if(dets.size==0):
+          return
+        if len(dets.shape) == 1:
+          # 如果 dets 是一維的，則轉換為二維
+          dets = dets.reshape(1, -1)  # 將其轉換為 (1, 5)
         trk.update(dets[d,:][0])
 
     #create and initialise new trackers for unmatched detections
